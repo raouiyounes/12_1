@@ -113,6 +113,19 @@ target_link_libraries(ratslam_Youness
   ${OPENGL_LIBRARIES}
   ${OpenCV_LIBRARIES})
 
+
+# for odometry testing
+
+add_executable(ratslam_odo src/main_odo.cpp)
+target_link_libraries(ratslam_odo
+  ${catkin_LIBRARIES}
+  ratslam
+  ratslam2
+  ${IRRLICHT_LIBRARIES}
+  ${OPENGL_LIBRARIES}
+  ${OpenCV_LIBRARIES})
+
+
 #config files for devel
 set(MEDIA_PATH ${CMAKE_CURRENT_SOURCE_DIR}/src/media) #devel use the files in the source dir
 file(GLOB infiles "config/*.in")
@@ -148,8 +161,9 @@ add_dependencies(ratslam_pc ratslam_ros_generate_messages_cpp)
 add_dependencies(ratslam_em ratslam_ros_generate_messages_cpp)
 add_dependencies(ratslam_vo ratslam_ros_generate_messages_cpp)
 add_dependencies(ratslam_Youness ratslam_ros_generate_messages_cpp)
+add_dependencies(ratslam_odo ratslam_ros_generate_messages_cpp)
 
-install(TARGETS ratslam ratslam2 ratslam_lv ratslam_pc ratslam_em ratslam_vo
+install(TARGETS ratslam ratslam2 ratslam_lv ratslam_pc ratslam_em ratslam_vo ratslam_odo
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 

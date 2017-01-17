@@ -5,6 +5,7 @@
 #include "ratslam/FPVision.h"
 #include "utils/utils.h"
 #include "ratslam/visual_odometry.h"
+
 #include <boost/property_tree/ini_parser.hpp>
 #include <cv_bridge/cv_bridge.h>
 #include "fstream"
@@ -12,9 +13,12 @@
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/CompressedImage.h>
 #include <nav_msgs/Odometry.h>
+
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui/highgui.hpp>
+
 #include <image_transport/image_transport.h>
+
 using namespace ratslam;
 using namespace std;
 Mat image_init=imread("/home/younes/Images/test.jpg");
@@ -29,6 +33,9 @@ std::vector<Mat>  image_history;
 Matos landmarks;
 ros::Publisher pub_vo;
 geometry_msgs::Twist speed;
+
+
+
 
 
 void odo_callback(const nav_msgs::Odometry::ConstPtr& msg)
