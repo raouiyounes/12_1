@@ -1,0 +1,237 @@
+/*
+ * FPVision.cpp
+ *
+ *  Created on: 14 nov. 2016
+ *      Author: younes
+ */
+
+#include "FPVision.h"
+#include "local_view_match.h"
+#include "opencv2/core.hpp"
+#include "opencv2/features2d.hpp"
+#include "opencv2/xfeatures2d.hpp"
+#include "opencv2/highgui.hpp"
+#include <eigen3/Eigen/Dense>
+#include <vector>
+typedef vector<vector<float> >  Matos;
+using namespace cv;
+using namespace Eigen;
+using namespace std;
+using namespace cv::xfeatures2d;
+namespace ratslam{
+FPVision::FPVision(Mat  xx, int nbr_landmarks_local){
+
+	v_landmarks=new Matos(nbr_landmarks_local);
+	nbr_of_landmarks=nbr_landmarks_local;
+	index_of_landmark=0;
+	index_of_feature_pred=0;
+}
+
+FPVision::FPVision(const FPVision &fp){
+v_landmarks=new Matos(nbr_of_landmarks);
+v_landmarks=fp.v_landmarks;
+}
+FPVision::~FPVision() {
+	initial_robot_pose.clear();
+	delete v_landmarks;
+}
+
+Matos FPVision::compute_initial_pose_land(Mat initial_image){
+float u0=162.0;
+float v0=125.0;
+float ku=341.4;
+float kv=261.3;
+float Suv=255;
+float cv=298.7;
+float cu=236.4;
+float f=824.4*0.001;
+vector<KeyPoint> surf_init;
+MatrixXd M_intrins(3,3);
+VectorXd X_prime(3);
+vector<float> one_landmark;
+Matos Xv_init;
+VectorXd fp_uv(3);
+M_intrins(0,0)=ku;
+M_intrins(0,1)=Suv;
+M_intrins(0,2)=cu;
+M_intrins(1,0)=0;
+M_intrins(1,1)=kv;
+M_intrins(1,2)=cv;
+M_intrins(2,0)=0;
+M_intrins(2,1)=0;
+M_intrins(2,2)=1;
+surf_init=this->surf_extractor(initial_image);
+int i;
+KeyPoint one_feature;
+this->size_of_surf=surf_init.size();
+for(i=0;i<surf_init.size();i++){
+	one_feature=surf_init.at(i);
+fp_uv(0)=one_feature.pt.x;
+fp_uv(1)=one_feature.pt.y;
+X_prime=(1/f)*M_intrins.inverse()*fp_uv;
+one_landmark.push_back(X_prime(0));
+one_landmark.push_back(X_prime(1));
+one_landmark.push_back(sqrt(pow(X_prime(0),2)+pow(X_prime(1),2)));
+Xv_init.push_back(one_landmark);
+one_landmark.clear();
+}
+map_of_landmarks[index_of_landmark]=Xv_init;
+//index_of_landmark++;
+
+return Xv_init;
+
+}
+
+
+void FPVision::predict_feature_points(){
+
+	float u0=162.0;
+	float v0=125.0;
+	float ku=341.4;
+	float kv=261.3;
+	float Suv=255;
+	float cv=298.7;
+	float cu=236.4;
+	float f=824.4*0.001;
+
+VectorXd pose_landmarks(4);
+MatrixXd M_intrins(3,3);
+Matos x;
+	M_intrins(0,0)=ku;
+	M_intrins(0,1)=Suv;
+	M_intrins(0,2)=cu;
+	M_intrins(1,0)=0;
+	M_intrins(1,1)=kv;
+	M_intrins(1,2)=cv;
+	M_intrins(2,0)=0;
+	M_intrins(2,1)=0;
+	M_intrins(2,2)=1;
+
+
+MatrixXd focal(3,4);
+Matos feature_point_m_predict;
+focal(0,0)=f;
+focal(1,0)=0;
+focal(2,0)=0;
+focal(0,1)=0;
+focal(1,1)=f;
+focal(2,1)=0;
+focal(0,2)=0;
+focal(1,2)=0;
+focal(2,2)=1;
+focal(0,3)=0;
+focal(1,3)=0;
+focal(2,3)=0;
+x=map_of_landmarks[index_of_landmark];
+vector<float> one_fp;
+vector<float>  one_landmark;
+VectorXd featurePoint(3);
+for(int i=0;i<x.size();i++){
+one_landmark=x.at(i);
+
+pose_landmarks(0)=one_landmark.at(0);
+pose_landmarks(1)=one_landmark.at(1);
+pose_landmarks(2)=one_landmark.at(2);
+pose_landmarks(3)=1;
+featurePoint=M_intrins*focal*pose_landmarks;
+one_fp.push_back(pose_landmarks(0));
+one_fp.push_back(pose_landmarks(1));
+one_fp.push_back(pose_landmarks(2));
+feature_point_m_predict.push_back(one_fp);
+one_fp.clear();
+}
+
+
+feature_point_predict[index_of_feature_pred]=feature_point_m_predict;
+
+}
+
+
+void FPVision::predict_pose_landmarks(float p,float q,float delta){
+Matos visu_land_loc;
+Matos visu_land_loc_new;
+
+visu_land_loc=map_of_landmarks[index_of_landmark];
+vector<float> one_landmark;
+vector<float> one_landmark_new;
+for(int i=0;i<this->size_of_surf;i++){
+	one_landmark=visu_land_loc.at(i);
+	one_landmark_new.push_back((one_landmark.at(0)-p)*cos(delta)-(one_landmark.at(2)-q)*sin(delta));
+	one_landmark_new.push_back(one_landmark.at(1));
+	one_landmark_new.push_back((one_landmark.at(0)-p)*sin(delta)+(one_landmark.at(2)-q)*cos(delta));
+	visu_land_loc_new.push_back(one_landmark_new);
+}
+map_of_landmarks[++index_of_landmark]=visu_land_loc_new;
+}
+
+DMatch* FPVision::surf_extractor(Mat img_1,Mat imo_old){
+	vector<vector <float> >  detector_id_local;
+	int minHessian = 400;
+	int i;
+	vector<float> line_of_features;
+	Ptr<SURF> detector = SURF::create( );
+	  detector->setHessianThreshold(minHessian);
+	  std::vector<KeyPoint> keypoints_1, keypoints_2;
+	  Mat descriptors_1, descriptors_2;
+	  detector->detectAndCompute( img_1, Mat(), keypoints_1, descriptors_1 );
+	  detector->detectAndCompute( imo_old, Mat(), keypoints_2, descriptors_2 );
+FlannBasedMatcher matcher;
+ std::vector< DMatch > matches;
+ matcher.match( descriptors_1, descriptors_2, matches );
+double min_dist=100.0,max_dist=0.0;
+ for(int i=0;i<descriptors_1.rows;i++){
+	 double dist=matches[i].distance;
+	 if(dist<min_dist)
+		 dist=min_dist;
+	if(dist>max_dist)
+		 dist=max_dist;
+ }
+ int kl=0;
+DMatch* good_matches;
+good_matches=(DMatch*)malloc(descriptors_1.rows*sizeof(DMatch));
+for(int i=0;i<descriptors_1.rows;i++)
+	if(matches[i].distance<=max(2*min_dist, 0.02) ){
+		good_matches[FPVision::k++]=matches[i];
+	}
+/*for( int i = 0; i < k; i++ )
+{ printf( "-- Good Match [%d] Keypoint 1: %d  -- Keypoint 2: %d  \n", i, good_matches[i].queryIdx, good_matches[i].trainIdx ); }
+waitKey(0);*/
+return good_matches;
+}
+
+
+void FPVision::compute_depth(std::vector<KeyPoint> keypoints_1, std::vector<KeyPoint> keypoints_2,DMatch* good_matches){
+vector<int> m;
+
+	for(int i=0;i<FPVision::k;i++)
+		m.push_back(good_matches[i].trainIdx);
+
+
+}
+
+
+vector<KeyPoint> FPVision::surf_extractor(Mat img){
+	int minHessian = 400;
+	int i;
+	Ptr<SURF> detector = SURF::create( );
+	  detector->setHessianThreshold(minHessian);
+	  std::vector<KeyPoint> keypoints_1;
+	  Mat descriptors_1;
+	  detector->detectAndCompute( img, Mat(), keypoints_1, descriptors_1 );
+return keypoints_1;
+}
+
+
+
+
+void FPVision::compute_landmarks(std::vector<KeyPoint>  keypoints){
+
+
+
+
+
+
+
+}
+
+}

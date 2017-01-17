@@ -1,0 +1,15 @@
+
+<launch>
+
+	<machine name="local_alt" address="localhost" default="true" />
+	
+	<node name="RatSLAMLocalViewCells" pkg="ratslam_ros" type="ratslam_lv" args="$(find ratslam_ros)/config/config_irataus.txt _image_transport:=compressed" cwd="node" required="true" />
+	<node pkg="image_view" type="image_view" name="overhead" args="image:=/overhead/camera/image _image_transport:=compressed" />
+
+<node name="image_listener" pkg="ratslam_ros" type="ratslam_Younes"  args="/irat_red/camera/image _image_transport:=compressed" cwd="node" required="true" />
+
+
+
+</launch>
+
+
