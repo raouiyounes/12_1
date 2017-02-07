@@ -101,7 +101,7 @@ int ExperienceMap::on_create_experience(unsigned int exp_id)
 
 // update the current position of the experience map
 // since the last experience
-void ExperienceMap::on_odo(double vtrans, double vrot, double time_diff_s)
+void ExperienceMap::on_odo(double vtrans, double vrot, double time_diff_s, std::vector<double> &motion)
 {
   vtrans = vtrans * time_diff_s;
   vrot = vrot * time_diff_s;
@@ -109,6 +109,9 @@ void ExperienceMap::on_odo(double vtrans, double vrot, double time_diff_s)
   accum_delta_x = accum_delta_x + vtrans * cos(accum_delta_facing);
   accum_delta_y = accum_delta_y + vtrans * sin(accum_delta_facing);
   accum_delta_time_s += time_diff_s;
+  //motion.push_back(new_exp->x_m);
+  //motion.push_back(new_exp->y_m);
+  //motion.push_back(new_exp->th_rad);
 }
 
 // iterate the experience map. Perform a graph relaxing algorithm to allow

@@ -28,6 +28,7 @@
 
 #include "local_view_match.h"
 #include "../utils/utils.h"
+
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
@@ -36,9 +37,14 @@
 using namespace std;
 #include <boost/foreach.hpp>
 #include <algorithm>
+
 #include <stdio.h>
+
 namespace ratslam
 {
+
+
+
 LocalViewMatch::LocalViewMatch(ptree settings)
 {
   get_setting_from_ptree(VT_MIN_PATCH_NORMALISATION_STD, settings, "vt_min_patch_normalisation_std", (double)0);

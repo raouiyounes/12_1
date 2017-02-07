@@ -173,6 +173,17 @@ public:
 
   }
 
+////////////////////////
+  /*void get_exp(std::vector<double> &pose_x, std::vector<double> &pose_y)
+  {
+      for (i = 0; i < map->experiences.size(); i++)
+    {
+	pose_x.push_back(map->experiences[i].x_m);
+	pose_y.push_back(map->experiences[i].y_m);
+    }
+  }*/
+///////////////////////
+
   void update_links()
   {
     int x2d1, y2d1, x2d2, y2d2;

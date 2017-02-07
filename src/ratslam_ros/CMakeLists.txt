@@ -3,11 +3,7 @@ project(ratslam_ros)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 
-
-## Find catkin macros and libraries
-## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
-## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS message_generation std_msgs roscpp sensor_msgs cv_bridge nav_msgs tf visualization_msgs image_transport nav_msgs) ## actionlib_msgs)
+find_package(catkin REQUIRED COMPONENTS libviso2 message_generation std_msgs roscpp sensor_msgs nav_msgs tf visualization_msgs image_transport nav_msgs cv_bridge)
 
 find_package(OpenCV)
 include_directories(${OpenCV_INCLUDE_DIRS})
@@ -24,6 +20,7 @@ add_message_files(
    TopologicalMap.msg
    TopologicalNode.msg
    ViewTemplate.msg
+   TransAndRot.msg
 )
 
 ## Generate actions in the 'msg' folder
@@ -46,9 +43,8 @@ generate_messages(
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-CATKIN_DEPENDS message_runtime geometry_msgs std_msgs
+CATKIN_DEPENDS message_runtime geometry_msgs std_msgs sensor_msgs cv_bridge image_transport
 )
-
 
 ###########
 ## Build ##
@@ -59,11 +55,15 @@ CATKIN_DEPENDS message_runtime geometry_msgs std_msgs
 # include_directories(include)
 include_directories(
   ${catkin_INCLUDE_DIRS}
+  ${OpenCV_INCLUDE_DIRS}
+  ${libviso2_INCLUDE_DIRS}
 )
 
-#ratslam library
+#ratslam library  add_library(ratslam src/ratslam/experience_map.cpp src/ratslam/posecell_network.cpp src/ratslam/local_view_match.cpp src/ratslam/visual_odometry.cpp)
+
 add_library(ratslam src/ratslam/experience_map.cpp src/ratslam/posecell_network.cpp  src/ratslam/local_view_match.cpp src/ratslam/visual_odometry.cpp)
 add_library(ratslam2  src/ratslam/FPVision.cpp )
+
 
 
 # uncomment is you don't have irrlicht installed
@@ -73,7 +73,7 @@ add_executable(ratslam_lv src/main_lv.cpp)
 target_link_libraries(ratslam_lv 
   ${catkin_LIBRARIES}
   ratslam
-  ratslam2
+ratslam2
   ${IRRLICHT_LIBRARIES}
   ${OPENGL_LIBRARIES}
   ${OpenCV_LIBRARIES})
@@ -82,7 +82,7 @@ add_executable(ratslam_pc src/main_pc.cpp)
 target_link_libraries(ratslam_pc
   ${catkin_LIBRARIES} 
   ratslam
-  ratslam2
+ratslam2
   ${IRRLICHT_LIBRARIES}
   ${OPENGL_LIBRARIES})
 
@@ -90,7 +90,7 @@ add_executable(ratslam_em src/main_em.cpp)
 target_link_libraries(ratslam_em
   ${catkin_LIBRARIES}
   ratslam
-  ratslam2
+ratslam2
   ${IRRLICHT_LIBRARIES}
   ${OPENGL_LIBRARIES})
 
@@ -98,33 +98,17 @@ add_executable(ratslam_vo src/main_vo.cpp)
 target_link_libraries(ratslam_vo
   ${catkin_LIBRARIES}
   ratslam
-  ratslam2
+ratslam2
   ${IRRLICHT_LIBRARIES}
   ${OPENGL_LIBRARIES}
   ${OpenCV_LIBRARIES})
 
-
-add_executable(ratslam_Youness src/main_FP1.cpp)
-target_link_libraries(ratslam_Youness
+add_executable(ratslam_mono src/main_mono.cpp)
+target_link_libraries(ratslam_mono
   ${catkin_LIBRARIES}
-  ratslam
-  ratslam2
-  ${IRRLICHT_LIBRARIES}
-  ${OPENGL_LIBRARIES}
+ ratslam
+ratslam2
   ${OpenCV_LIBRARIES})
-
-
-# for odometry testing
-
-add_executable(ratslam_odo src/main_odo.cpp)
-target_link_libraries(ratslam_odo
-  ${catkin_LIBRARIES}
-  ratslam
-  ratslam2
-  ${IRRLICHT_LIBRARIES}
-  ${OPENGL_LIBRARIES}
-  ${OpenCV_LIBRARIES})
-
 
 #config files for devel
 set(MEDIA_PATH ${CMAKE_CURRENT_SOURCE_DIR}/src/media) #devel use the files in the source dir
@@ -160,10 +144,10 @@ add_dependencies(ratslam_lv ratslam_ros_generate_messages_cpp)
 add_dependencies(ratslam_pc ratslam_ros_generate_messages_cpp)
 add_dependencies(ratslam_em ratslam_ros_generate_messages_cpp)
 add_dependencies(ratslam_vo ratslam_ros_generate_messages_cpp)
-add_dependencies(ratslam_Youness ratslam_ros_generate_messages_cpp)
-add_dependencies(ratslam_odo ratslam_ros_generate_messages_cpp)
+add_dependencies(ratslam_mono ${catkin_EXPORTED_TARGETS})
+add_dependencies(ratslam_mono ${PROJECT_NAME}_gencpp)
 
-install(TARGETS ratslam ratslam2 ratslam_lv ratslam_pc ratslam_em ratslam_vo ratslam_odo
+install(TARGETS ratslam ratslam2 ratslam_lv ratslam_pc ratslam_em ratslam_vo
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 

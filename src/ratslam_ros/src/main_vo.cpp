@@ -1,14 +1,39 @@
-#include <ros/ros.h>
-#include <image_transport/image_transport.h>
-#include <opencv2/highgui/highgui.hpp>
-#include <cv_bridge/cv_bridge.h>
-#include "ratslam/FPVision.h"
+/*
+ * openRatSLAM
+ *
+ * utils - General purpose utility helper functions mainly for angles and readings settings
+ *
+ * Copyright (C) 2012
+ * David Ball (david.ball@qut.edu.au) (1), Scott Heath (scott.heath@uqconnect.edu.au) (2)
+ *
+ * RatSLAM algorithm by:
+ * Michael Milford (1) and Gordon Wyeth (1) ([michael.milford, gordon.wyeth]@qut.edu.au)
+ *
+ * 1. Queensland University of Technology, Australia
+ * 2. The University of Queensland, Australia
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include <iostream>
+using namespace std;
+
 #include "utils/utils.h"
 #include "ratslam/visual_odometry.h"
 
 #include <boost/property_tree/ini_parser.hpp>
-#include <cv_bridge/cv_bridge.h>
-#include "fstream"
+
 #include <ros/ros.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/CompressedImage.h>
@@ -16,82 +41,93 @@
 
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <cv_bridge/cv_bridge.h>  
 
 #include <image_transport/image_transport.h>
 
+
+ratslam::VisualOdometry *vo = NULL;
+ros::Publisher pub_vo;
+ofstream fichier;
+int in = 0;
+
 using namespace ratslam;
-using namespace std;
-Mat image_init=imread("/home/younes/Images/test.jpg");
-typedef vector<vector<float> > Matos;
-FPVision *fp=new FPVision(image_init,20);
-int nbre_of_captures=0;
 
-// 20 : nbre of landmarks
-int FPVision::k=0;
-Mat previous_image=image_init;
-std::vector<Mat>  image_history;
-Matos landmarks;
-
-void image_callback(const sensor_msgs::ImageConstPtr& image) {
-		 Mat image_init=imread("/home/younes/Images/test.jpg");
-	DMatch* good_matches;
-	good_matches=(DMatch*)malloc(sizeof(DMatch)*FPVision::k);
-
-	try
-	  	    {
-
-		if(nbre_of_captures++==0){
-	 		 cv_bridge::CvImagePtr   cv_ptr = cv_bridge::toCvCopy(image, sensor_msgs::image_encodings::BGR8);
-			Mat image_init=cv_ptr->image;
-			image_history.push_back(image_init);
-	  		landmarks=fp->compute_initial_pose_land(image_init);
-		}
-	  		cv_bridge::CvImagePtr   cv_ptr = cv_bridge::toCvCopy(image, sensor_msgs::image_encodings::BGR8);
-	  		image_history.push_back(cv_ptr->image);
-	  		landmarks=fp->compute_initial_pose_land(image_init);
-
-fp->predict_pose_landmarks(2.2,3.3,2.2);
-
-//cout<<fp->feature_point_predict[0].at(0).at(0)<<"kkkkkkkkkkkkkkkkkkkkkk";
-
-	  		//good_matches=fp->surf_extractor(cv_ptr->image,previous_image);
-	  		previous_image=cv_ptr->image;
-	  		nbre_of_captures++;
-	  	    }
-		catch (cv_bridge::Exception& e)
-		    {
-		      ROS_ERROR("cv_bridge exception: %s", e.what());
-		      return;
-		    }
-		  free(good_matches);
-
-}
-int main(int argc, char **argv)
+void image_callback(sensor_msgs::ImageConstPtr image)
 {
-	 if (argc < 2) {
-	    ROS_FATAL_STREAM("USAGE: " << argv[0] << "<config_file>");
-	    exit(-1);
-	  }
+  ROS_DEBUG_STREAM("VO:image_callback{" << ros::Time::now() << "} seq=" << image->header.seq);
 
-	  std::string topic_root = "";
+  static nav_msgs::Odometry odom_output;
 
-	  boost::property_tree::ptree settings, general_settings;
-	  read_ini(argv[1], settings);
-	  ratslam::get_setting_child(general_settings, settings, "general", true);
-	    ratslam::get_setting_from_ptree(topic_root, general_settings, "topic_root", (std::string) "");
+////////////////////////
+    /*unsigned char *image_data;
+    cv_bridge::CvImageConstPtr cv_ptr;
 
-	    if (!ros::isInitialized())
-	    {
-	      ros::init(argc, argv, "RatSLAMVisualOdometry");
-	    }
+      for(int i=0; i<image->height; i++) {
+	int l = i*image->width;
+	for(int j=0; i<640; j++) {
+	  image_data[j + (i*640)] = image->data[l+j+293];
+	}
+      }*/
+      //cv_ptr = cv_bridge::toCvCopy(image, sensor_msgs::image_encodings::MONO8);
+      //image_data = const_cast<unsigned char*>(cv_ptr->image/*(cv::Rect(293, 0, 640, 370))*/.data);
+    //}
+////////////////////////
+  vector<double> motion;
+  vo->on_image( &image->data[0], (image->encoding == "bgr8" ? false : true),
+		image->width, image->height,
+		&odom_output.twist.twist.linear.x, &odom_output.twist.twist.angular.z, motion);
 
-	  ros::NodeHandle node;
+  // fichier
+  fichier << in << "\t" << motion.at(0) << "\t" << motion.at(1) << "\t" << motion.at(2) << endl;
+  in++;
+  odom_output.header.stamp = image->header.stamp;
+  odom_output.header.seq++;
 
-	   image_transport::ImageTransport it(node);
-	  image_transport::Subscriber sub = it.subscribe(topic_root+"/camera/image", 1, image_callback);
-	  ros::spin();
-  delete fp;
-
+  pub_vo.publish(odom_output);
 }
 
 
+int main(int argc, char * argv[])
+{
+  ROS_INFO_STREAM(argv[0] << " - openRatSLAM Copyright (C) 2012 David Ball and Scott Heath");
+  ROS_INFO_STREAM("RatSLAM algorithm by Michael Milford and Gordon Wyeth");
+  ROS_INFO_STREAM("Distributed under the GNU GPL v3, see the included license file.");
+
+  if (argc < 2)
+  {
+    ROS_FATAL_STREAM("USAGE: " << argv[0] << " <config_file>");
+    exit(-1);
+  }
+
+  std::string topic_root = "";
+
+  boost::property_tree::ptree settings, general_settings, vo_settings;
+  read_ini(argv[1], settings);
+  ratslam::get_setting_child(vo_settings, settings, "visual_odometry", true);
+  ratslam::get_setting_child(general_settings, settings, "general", true);
+  ratslam::get_setting_from_ptree(topic_root, general_settings, "topic_root", (std::string) "");
+
+  vo = new ratslam::VisualOdometry(vo_settings);
+
+  if (!ros::isInitialized())
+  {
+    ros::init(argc, argv, "RatSLAMVisualOdometry");
+  }
+  ros::NodeHandle node;
+
+  pub_vo = node.advertise<nav_msgs::Odometry>(topic_root + "/odom", 0);
+
+  image_transport::ImageTransport it(node);
+  image_transport::Subscriber sub = it.subscribe(topic_root + "/camera/image"/*"kitti_stereo/left/image_rect"*/, 1, image_callback);
+
+///////////// fichier
+  fichier.open("/home/h_mst/Bureau/result/stlucia_vo.txt", ios::out | ios::trunc);
+  if(!fichier) {
+	cerr << "Impossible d'ouvrir le fichier !" << endl;
+  }
+
+  ros::spin();
+
+  return 0;
+}

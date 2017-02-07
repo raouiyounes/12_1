@@ -22,7 +22,6 @@ vt_active_decay = 1.0
 
 exp_loops=20
 
-
 [visual_odometry]
 vtrans_image_x_min=195
 vtrans_image_x_max=475
@@ -36,7 +35,7 @@ vrot_image_y_max=240
 
 camera_fov_deg=53
 camera_hz = 10
-vtrans_scaling = 1000
+vtrans_scaling = 100
 vtrans_max=20
 
 [draw]

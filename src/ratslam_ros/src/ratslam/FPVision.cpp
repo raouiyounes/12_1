@@ -20,13 +20,11 @@ using namespace std;
 using namespace cv::xfeatures2d;
 namespace ratslam{
 FPVision::FPVision(Mat  xx, int nbr_landmarks_local){
-
 	v_landmarks=new Matos(nbr_landmarks_local);
 	nbr_of_landmarks=nbr_landmarks_local;
 	index_of_landmark=0;
 	index_of_feature_pred=0;
 }
-
 FPVision::FPVision(const FPVision &fp){
 v_landmarks=new Matos(nbr_of_landmarks);
 v_landmarks=fp.v_landmarks;
@@ -35,6 +33,11 @@ FPVision::~FPVision() {
 	initial_robot_pose.clear();
 	delete v_landmarks;
 }
+
+
+/*initialize the poses of the landmarks
+ * with an image tha the robot gets at the begining
+ */
 
 Matos FPVision::compute_initial_pose_land(Mat initial_image){
 float u0=162.0;
@@ -83,6 +86,10 @@ return Xv_init;
 }
 
 
+/*perdit the pose the next sets of landmarks
+ * with the use of the pihole model
+ */
+
 void FPVision::predict_feature_points(){
 
 	float u0=162.0;
@@ -106,8 +113,6 @@ Matos x;
 	M_intrins(2,0)=0;
 	M_intrins(2,1)=0;
 	M_intrins(2,2)=1;
-
-
 MatrixXd focal(3,4);
 Matos feature_point_m_predict;
 focal(0,0)=f;
@@ -128,7 +133,6 @@ vector<float>  one_landmark;
 VectorXd featurePoint(3);
 for(int i=0;i<x.size();i++){
 one_landmark=x.at(i);
-
 pose_landmarks(0)=one_landmark.at(0);
 pose_landmarks(1)=one_landmark.at(1);
 pose_landmarks(2)=one_landmark.at(2);
@@ -140,17 +144,16 @@ one_fp.push_back(pose_landmarks(2));
 feature_point_m_predict.push_back(one_fp);
 one_fp.clear();
 }
-
-
 feature_point_predict[index_of_feature_pred]=feature_point_m_predict;
-
 }
 
+/*
+ *predict the landmarks' pose X Y Z given the robot pose
+ */
 
 void FPVision::predict_pose_landmarks(float p,float q,float delta){
 Matos visu_land_loc;
 Matos visu_land_loc_new;
-
 visu_land_loc=map_of_landmarks[index_of_landmark];
 vector<float> one_landmark;
 vector<float> one_landmark_new;
@@ -163,9 +166,13 @@ for(int i=0;i<this->size_of_surf;i++){
 }
 map_of_landmarks[++index_of_landmark]=visu_land_loc_new;
 }
+/*extract the SURF features and match between two images using DMatch class
+ */
+void FPVision::surf_extractor(Mat img_1,Mat imo_old){
+	//DMatch* good_matches;
 
-DMatch* FPVision::surf_extractor(Mat img_1,Mat imo_old){
-	vector<vector <float> >  detector_id_local;
+
+	 	vector<vector <float> >  detector_id_local;
 	int minHessian = 400;
 	int i;
 	vector<float> line_of_features;
@@ -179,37 +186,55 @@ FlannBasedMatcher matcher;
  std::vector< DMatch > matches;
  matcher.match( descriptors_1, descriptors_2, matches );
 double min_dist=100.0,max_dist=0.0;
- for(int i=0;i<descriptors_1.rows;i++){
-	 double dist=matches[i].distance;
+ for(int i=0;i<descriptors_1.rows;i++){	 double dist=matches[i].distance;
 	 if(dist<min_dist)
 		 dist=min_dist;
 	if(dist>max_dist)
 		 dist=max_dist;
  }
  int kl=0;
-DMatch* good_matches;
-good_matches=(DMatch*)malloc(descriptors_1.rows*sizeof(DMatch));
-for(int i=0;i<descriptors_1.rows;i++)
-	if(matches[i].distance<=max(2*min_dist, 0.02) ){
-		good_matches[FPVision::k++]=matches[i];
-	}
-/*for( int i = 0; i < k; i++ )
-{ printf( "-- Good Match [%d] Keypoint 1: %d  -- Keypoint 2: %d  \n", i, good_matches[i].queryIdx, good_matches[i].trainIdx ); }
-waitKey(0);*/
-return good_matches;
+
+
+std::vector< DMatch > good_matches;
+
+for( int i = 0; i < descriptors_1.rows; i++ )
+{ if( matches[i].distance <= max(2*min_dist, 0.02) )
+  { good_matches.push_back( matches[i]); }
+}
+
+Mat img_matches;
+  drawMatches( img_1, keypoints_1, imo_old, keypoints_2,
+               good_matches, img_matches, Scalar::all(-1), Scalar::all(-1),
+               vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
+
+  //-- Show detected matches
+  imshow( "Good Matches", img_matches );
+
+  for( int i = 0; i < (int)good_matches.size(); i++ )
+  { printf( "-- Good Match [%d] Keypoint 1: %d  -- Keypoint 2: %d  \n", i, good_matches[i].queryIdx, good_matches[i].trainIdx ); }
+
+
+
+//for( int i = 0; i < k; i++ )
+//{ printf( "-- Good Match [%d] Keypoint 1: %d  -- Keypoint 2: %d  \n", i, good_matches[i].queryIdx, good_matches[i].trainIdx ); }
+
+waitKey(1);
+
+//return good_matches;
 }
 
 
 void FPVision::compute_depth(std::vector<KeyPoint> keypoints_1, std::vector<KeyPoint> keypoints_2,DMatch* good_matches){
 vector<int> m;
-
 	for(int i=0;i<FPVision::k;i++)
 		m.push_back(good_matches[i].trainIdx);
 
-
 }
 
-
+/*
+ * ectract the SURF features
+ *
+ */
 vector<KeyPoint> FPVision::surf_extractor(Mat img){
 	int minHessian = 400;
 	int i;
@@ -224,14 +249,5 @@ return keypoints_1;
 
 
 
-void FPVision::compute_landmarks(std::vector<KeyPoint>  keypoints){
-
-
-
-
-
-
-
-}
 
 }

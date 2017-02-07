@@ -139,7 +139,7 @@ public:
 
   // update the current position of the experience map
   // since the last experience
-  void on_odo(double vtrans, double vrot, double time_diff_s);
+  void on_odo(double vtrans, double vrot, double time_diff_s, std::vector<double> &motion);
 
   // update the map by relaxing the graph
   bool iterate();

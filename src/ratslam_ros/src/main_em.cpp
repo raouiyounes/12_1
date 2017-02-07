@@ -57,6 +57,12 @@ ratslam::ExperienceMapScene *ems;
 bool use_graphics;
 #endif
 
+#include <iostream>
+using namespace std;
+///////////// fichier
+ofstream f;
+int yy = 1;
+
 using namespace ratslam;
 
 void odo_callback(nav_msgs::OdometryConstPtr odo, ratslam::ExperienceMap *em)
@@ -64,11 +70,12 @@ void odo_callback(nav_msgs::OdometryConstPtr odo, ratslam::ExperienceMap *em)
   ROS_DEBUG_STREAM("EM:odo_callback{" << ros::Time::now() << "} seq=" << odo->header.seq << " v=" << odo->twist.twist.linear.x << " r=" << odo->twist.twist.angular.z);
 
   static ros::Time prev_time(0);
-
   if (prev_time.toSec() > 0)
   {
+    vector<double> motion;
     double time_diff = (odo->header.stamp - prev_time).toSec();
-    em->on_odo(odo->twist.twist.linear.x, odo->twist.twist.angular.z, time_diff);
+    em->on_odo(odo->twist.twist.linear.x, odo->twist.twist.angular.z, time_diff, motion);
+    //f << yy << "\t" << motion.at(0) << "\t" << motion.at(1) << "\t" << motion.at(2) << endl;
   }
 
   static ros::Time prev_goal_update(0);
@@ -95,20 +102,17 @@ void odo_callback(nav_msgs::OdometryConstPtr odo, ratslam::ExperienceMap *em)
       pose.header.frame_id = "1";
       path.poses.clear();
       unsigned int trace_exp_id = em->get_goals()[0];
+
       while (trace_exp_id != em->get_goal_path_final_exp())
       {
         pose.pose.position.x = em->get_experience(trace_exp_id)->x_m;
         pose.pose.position.y = em->get_experience(trace_exp_id)->y_m;
         path.poses.push_back(pose);
         pose.header.seq++;
-
         trace_exp_id = em->get_experience(trace_exp_id)->goal_to_current;
       }
-
       pub_goal_path.publish(path);
-
       path.header.seq++;
-
     }
     else
     {
@@ -120,7 +124,6 @@ void odo_callback(nav_msgs::OdometryConstPtr odo, ratslam::ExperienceMap *em)
       path.header.seq++;
     }
   }
-
   prev_time = odo->header.stamp;
 }
 
@@ -170,6 +173,13 @@ void action_callback(ratslam_ros::TopologicalActionConstPtr action, ratslam::Exp
     em_map.header.seq++;
     em_map.node_count = em->get_num_experiences();
     em_map.node.resize(em->get_num_experiences());
+
+    ofstream fichier("/home/h_mst/Bureau/result/stlucia_em.txt", ios::out | ios::trunc);
+    if(!fichier)
+    {
+      cerr << "Impossible d'ouvrir le fichier !" << endl;
+    }
+
     for (int i = 0; i < em->get_num_experiences(); i++)
     {
       em_map.node[i].id = em->get_experience(i)->id;
@@ -179,7 +189,10 @@ void action_callback(ratslam_ros::TopologicalActionConstPtr action, ratslam::Exp
       em_map.node[i].pose.orientation.y = 0;
       em_map.node[i].pose.orientation.z = sin(em->get_experience(i)->th_rad / 2.0);
       em_map.node[i].pose.orientation.w = cos(em->get_experience(i)->th_rad / 2.0);
+
+      fichier << em->get_experience(i)->x_m << "\t" << em->get_experience(i)->y_m << endl;
     }
+    fichier.close();
 
     em_map.edge_count = em->get_num_links();
     em_map.edge.resize(em->get_num_links());
@@ -283,6 +296,12 @@ int main(int argc, char * argv[])
 
   ros::Subscriber sub_goal = node.subscribe<geometry_msgs::PoseStamped>(topic_root + "/ExperienceMap/SetGoalPose", 0, boost::bind(set_goal_pose_callback, _1, em),
                                                                         ros::VoidConstPtr(), ros::TransportHints().tcpNoDelay());
+
+  f.open("/home/h_mst/Bureau/result/stlucia_vo.txt", ios::out | ios::trunc);
+  if(!f) {
+	cerr << "Impossible d'ouvrir le fichier !" << endl;
+  }
+  f << 0 << "\t" << 0.0 << "\t" << 0.0 << "\t" << 0.0 << endl;
 
 #ifdef HAVE_IRRLICHT
   boost::property_tree::ptree draw_settings;

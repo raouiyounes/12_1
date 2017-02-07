@@ -45,7 +45,7 @@ public:
 
   VisualOdometry(ptree settings);
 
-  void on_image(const unsigned char * data, bool greyscale, unsigned int image_width, unsigned int image_height, double *vtrans_ms, double *vrot_rads);
+  void on_image(const unsigned char * data, bool greyscale, unsigned int image_width, unsigned int image_height, double *vtrans_ms, double *vrot_rads, std::vector<double> &motion);
 
   template<typename Archive>
     void serialize(Archive& ar, const unsigned int version)
@@ -108,6 +108,14 @@ private:
   std::vector<double> vrot_prev_profile;
 
   bool first;
+
+/////////////
+double accum_x;
+double accum_y;
+double x__m;
+double y__m;
+double accum_delta_facing;
+////////////
 
   void visual_odo(double *data, unsigned short width, double *olddata, double *vtrans_ms, double *vrot_rads);
 

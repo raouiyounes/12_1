@@ -51,7 +51,7 @@ inline void get_setting_from_ptree(T & var, boost::property_tree::ptree & settin
 	catch(boost::property_tree::ptree_bad_path pbp)
 	{
 		var = default_value;
-		std::cout << "SETTINGS(warning): " << name << " not found so default (" << default_value << ") used." << std::endl;
+	//	std::cout << "SETTINGS(warning): " << name << " not found so default (" << default_value << ") used." << std::endl;
 	}
 }
 
@@ -63,7 +63,7 @@ inline bool get_setting_child(boost::property_tree::ptree & child, boost::proper
 	}
 	catch(boost::property_tree::ptree_bad_path pbp)
 	{
-		std::cout << "SETTINGS(error): " << name << " child not found." << std::endl;
+		//std::cout << "SETTINGS(error): " << name << " child not found." << std::endl;
 //		if (pause_on_error)
 //			std::cin.get();
 		return false;

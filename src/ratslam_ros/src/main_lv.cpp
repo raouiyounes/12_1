@@ -31,6 +31,7 @@ using namespace std;
 
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <cv_bridge/cv_bridge.h> 
 
 #include "utils/utils.h"
 
@@ -41,7 +42,6 @@ using namespace std;
 #include <sensor_msgs/CompressedImage.h>
 #include <ratslam_ros/ViewTemplate.h>
 #include <ros/console.h>
-#include <cv_bridge/cv_bridge.h>
 
 #include <image_transport/image_transport.h>
 
@@ -53,7 +53,6 @@ ratslam::LocalViewScene *lvs = NULL;
 bool use_graphics;
 #endif
 
-
 using namespace ratslam;
 ratslam::LocalViewMatch * lv = NULL;
 
@@ -62,22 +61,22 @@ void image_callback(sensor_msgs::ImageConstPtr image, ros::Publisher * pub_vt)
   ROS_DEBUG_STREAM("LV:image_callback{" << ros::Time::now() << "} seq=" << image->header.seq);
 
   static ratslam_ros::ViewTemplate vt_output;
-
-
-	try
-	    {
-		 cv_bridge::CvImagePtr   cv_ptr = cv_bridge::toCvCopy(image, sensor_msgs::image_encodings::BGR8);
-
-	      		      cv::waitKey(3);
-
-	    }
-	catch (cv_bridge::Exception& e)
-	    {
-	      ROS_ERROR("cv_bridge exception: %s", e.what());
-	      return;
-	    }
-
- /* lv->on_image(&image->data[0], (image->encoding == "bgr8" ? false : true), image->width, image->height);
+   /* unsigned char image_data[640*370];
+      for(int i=0; i<image->height; i++) {
+	int l = i*image->width;
+	for(int j=0; i<640; j++) {
+	  image_data[j + (i*640)] = image->data[l+j+293];
+	}
+      }*/
+    //const unsigned char *data;
+    //cv_bridge::CvImageConstPtr cv_ptr;
+    //cv_ptr = cv_bridge::toCvShare(image, sensor_msgs::image_encodings::MONO8);
+    //data = const_cast<unsigned char*>(cv_ptr->image.data);//(cv_ptr->image/*(cv::Rect(293, 0, 640, 370))*/.data);
+    //cv::imshow("img",cv_ptr->image);
+    //cv::waitKey(1);
+    //std::cout << "encoding = " << image->encoding << "\tdim = " << image->width << "*" << image->height << std::endl;
+  lv->on_image( &image->data[0]/*(const unsigned char *)&cv_ptr->image.data[0]*/, (image->encoding == "bgr8" ? false : true),
+		image->width, image->height);
 
   vt_output.header.stamp = ros::Time::now();
   vt_output.header.seq++;
@@ -92,7 +91,6 @@ void image_callback(sensor_msgs::ImageConstPtr image, ros::Publisher * pub_vt)
     lvs->draw_all();
   }
 #endif
-*/
 }
 
 int main(int argc, char * argv[])
@@ -125,8 +123,7 @@ int main(int argc, char * argv[])
   ros::Publisher pub_vt = node.advertise<ratslam_ros::ViewTemplate>(topic_root + "/LocalView/Template", 0);
 
   image_transport::ImageTransport it(node);
-  image_transport::Subscriber sub = it.subscribe(topic_root + "/camera/image", 0, boost::bind(image_callback, _1, &pub_vt));
-
+  image_transport::Subscriber sub = it.subscribe/*<sensor_msgs::Image>*/(topic_root + "/camera/image"/*"/left/image_rect"*/, 0, boost::bind(image_callback, _1, &pub_vt));
 
 #ifdef HAVE_IRRLICHT
     boost::property_tree::ptree draw_settings;

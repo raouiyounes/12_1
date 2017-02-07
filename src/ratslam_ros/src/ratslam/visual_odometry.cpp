@@ -28,7 +28,9 @@
 
 #include "visual_odometry.h"
 #include "../utils/utils.h"
-
+#include <fstream>
+#include <iostream>
+#include <sstream>
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
@@ -59,9 +61,16 @@ VisualOdometry::VisualOdometry(ptree settings)
   vrot_prev_profile.resize(VROT_IMAGE_X_MAX - VROT_IMAGE_X_MIN);
 
   first = true;
+/////////////
+accum_x = 0;
+accum_y = 0;
+x__m = 0.0;
+y__m = 0.0;
+accum_delta_facing = 90*M_PI/180;
+/////////////
 }
 
-void VisualOdometry::on_image(const unsigned char * data, bool greyscale, unsigned int image_width, unsigned int image_height, double *vtrans_ms, double *vrot_rads)
+void VisualOdometry::on_image(const unsigned char * data, bool greyscale, unsigned int image_width, unsigned int image_height, double *vtrans_ms, double *vrot_rads, std::vector<double> &motion)
 {
   double dummy;
 
@@ -86,6 +95,16 @@ void VisualOdometry::on_image(const unsigned char * data, bool greyscale, unsign
 
   convert_view_to_view_template(&vrot_profile[0], data, greyscale, VROT_IMAGE_X_MIN, VROT_IMAGE_X_MAX, VROT_IMAGE_Y_MIN, VROT_IMAGE_Y_MAX);
   visual_odo(&vrot_profile[0], vrot_profile.size(), &vrot_prev_profile[0], &dummy, vrot_rads);
+
+  accum_delta_facing = clip_rad_180(accum_delta_facing + *vrot_rads/CAMERA_HZ);
+  accum_x = accum_x + *vtrans_ms/CAMERA_HZ * cos(accum_delta_facing);
+  accum_y = accum_y + *vtrans_ms/CAMERA_HZ * sin(accum_delta_facing);
+  //x__m = x__m + accum_x;
+  //y__m = y__m + accum_y;
+  motion.push_back(accum_x);
+  motion.push_back(accum_y);
+  motion.push_back(clip_rad_180(*vrot_rads/CAMERA_HZ));
+
 }
 
 void VisualOdometry::visual_odo(double *data, unsigned short width, double *olddata, double *vtrans_ms, double *vrot_rads)
@@ -147,11 +166,9 @@ void VisualOdometry::visual_odo(double *data, unsigned short width, double *oldd
   *vtrans_ms = mindiff * VTRANS_SCALING;
   if (*vtrans_ms > VTRANS_MAX)
     *vtrans_ms = VTRANS_MAX;
-
 }
 
-void VisualOdometry::convert_view_to_view_template(double *current_view, const unsigned char *view_rgb, bool grayscale, int X_RANGE_MIN, int X_RANGE_MAX, int Y_RANGE_MIN,
-                                                   int Y_RANGE_MAX)
+void VisualOdometry::convert_view_to_view_template(double *current_view, const unsigned char *view_rgb, bool grayscale, int X_RANGE_MIN, int X_RANGE_MAX, int Y_RANGE_MIN, int Y_RANGE_MAX)
 {
   unsigned int TEMPLATE_Y_SIZE = 1;
   unsigned int TEMPLATE_X_SIZE = X_RANGE_MAX - X_RANGE_MIN;

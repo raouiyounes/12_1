@@ -68,11 +68,10 @@ void odo_callback(nav_msgs::OdometryConstPtr odo, ratslam::PosecellNetwork *pc, 
       pc_output.header.stamp = ros::Time::now();
       pc_output.header.seq++;
       pc_output.dest_id = pc->get_current_exp_id();
-	  pc_output.relative_rad = pc->get_relative_rad();
+      pc_output.relative_rad = pc->get_relative_rad();
       pub_pc->publish(pc_output);
       ROS_DEBUG_STREAM("PC:action_publish{odo}{" << ros::Time::now() << "} action{" << pc_output.header.seq << "}=" <<  pc_output.action << " src=" << pc_output.src_id << " dest=" << pc_output.dest_id);
     }
-
 
 #ifdef HAVE_IRRLICHT
 	if (use_graphics)
@@ -135,6 +134,7 @@ int main(int argc, char * argv[])
                                                                     ros::TransportHints().tcpNoDelay());
   ros::Subscriber sub_template = node.subscribe<ratslam_ros::ViewTemplate>(topic_root + "/LocalView/Template", 0, boost::bind(template_callback, _1, pc, &pub_pc),
                                                                            ros::VoidConstPtr(), ros::TransportHints().tcpNoDelay());
+
 #ifdef HAVE_IRRLICHT
   boost::property_tree::ptree draw_settings;
   get_setting_child(draw_settings, settings, "draw", true);
