@@ -2,16 +2,19 @@ cmake_minimum_required(VERSION 2.8.3)
 project(ratslam_ros)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
-
-find_package(catkin REQUIRED COMPONENTS libviso2 message_generation std_msgs roscpp sensor_msgs nav_msgs tf visualization_msgs image_transport nav_msgs cv_bridge)
+SET(CMAKE_CXX_FLAGS "-std=c++0x")
+find_package(catkin REQUIRED COMPONENTS libviso2   pcl_conversions pcl_msgs message_generation std_msgs roscpp sensor_msgs nav_msgs tf visualization_msgs image_transport nav_msgs cv_bridge)
 
 find_package(OpenCV)
 include_directories(${OpenCV_INCLUDE_DIRS})
 find_package(Boost REQUIRED COMPONENTS serialization)
 find_package(Irrlicht REQUIRED)
 find_package(OpenGL REQUIRED)
+find_package(PCL REQUIRED)
 
+include_directories(${PCL_INCLUDE_DIRS})
 
+link_directories(${PCL_LIBRARY_DIRS})
 ## Generate messages in the 'msg' folder
 add_message_files(
    FILES
@@ -21,6 +24,9 @@ add_message_files(
    TopologicalNode.msg
    ViewTemplate.msg
    TransAndRot.msg
+   toute.msg
+   scalarMess.msg
+   poses_robot.msg
 )
 
 ## Generate actions in the 'msg' folder
@@ -43,7 +49,7 @@ generate_messages(
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-CATKIN_DEPENDS message_runtime geometry_msgs std_msgs sensor_msgs cv_bridge image_transport
+CATKIN_DEPENDS message_runtime geometry_msgs std_msgs sensor_msgs cv_bridge image_transport 
 )
 
 ###########
@@ -59,12 +65,11 @@ include_directories(
   ${libviso2_INCLUDE_DIRS}
 )
 
-#ratslam library  add_library(ratslam src/ratslam/experience_map.cpp src/ratslam/posecell_network.cpp src/ratslam/local_view_match.cpp src/ratslam/visual_odometry.cpp)
+#ratslam library 
 
 add_library(ratslam src/ratslam/experience_map.cpp src/ratslam/posecell_network.cpp  src/ratslam/local_view_match.cpp src/ratslam/visual_odometry.cpp)
-add_library(ratslam2  src/ratslam/FPVision.cpp )
-
-
+add_library(ratslam2  src/ratslam/FPVision.cpp src/ratslam/include_fs/measurement.h  src/ratslam/include_fs/movementModel.h  src/ratslam/include_fs/particle.h)
+add_library(ratslam3  src/ratslam/include_fs/loMeasurement.h  src/ratslam/include_fs/loMeasurement.cpp src/ratslam/include_fs/particle.cpp src/ratslam/include_fs/particle.h  src/ratslam/include_fs/sitRobotMM.h src/ratslam/include_fs/sitRobotMM.cpp)
 
 # uncomment is you don't have irrlicht installed
 add_definitions("-DHAVE_IRRLICHT")
@@ -110,6 +115,38 @@ target_link_libraries(ratslam_mono
 ratslam2
   ${OpenCV_LIBRARIES})
 
+
+add_executable(ratslam_pcl src/main_pcl.cpp)
+target_link_libraries(ratslam_pcl
+  ${catkin_LIBRARIES}
+ ratslam
+ratslam2
+  ${OpenCV_LIBRARIES}
+   ${PCL_LIBRARIES}
+  )
+
+add_executable(ratslam_fastslam src/main_fastslam.cpp)
+target_link_libraries(ratslam_fastslam
+  ${catkin_LIBRARIES}
+ ratslam
+ratslam2
+ratslam3
+  ${OpenCV_LIBRARIES}
+   ${PCL_LIBRARIES}
+  )
+  
+  
+  
+add_executable(ratslam_odo src/main_odo.cpp)
+target_link_libraries(ratslam_odo
+  ${catkin_LIBRARIES}
+  ratslam
+  ratslam2
+  ${IRRLICHT_LIBRARIES}
+  ${OPENGL_LIBRARIES}
+  ${OpenCV_LIBRARIES})
+  
+  
 #config files for devel
 set(MEDIA_PATH ${CMAKE_CURRENT_SOURCE_DIR}/src/media) #devel use the files in the source dir
 file(GLOB infiles "config/*.in")
@@ -144,10 +181,14 @@ add_dependencies(ratslam_lv ratslam_ros_generate_messages_cpp)
 add_dependencies(ratslam_pc ratslam_ros_generate_messages_cpp)
 add_dependencies(ratslam_em ratslam_ros_generate_messages_cpp)
 add_dependencies(ratslam_vo ratslam_ros_generate_messages_cpp)
+add_dependencies(ratslam_fastslam ratslam_ros_generate_messages_cpp)
+add_dependencies(ratslam_odo ratslam_ros_generate_messages_cpp)
+
 add_dependencies(ratslam_mono ${catkin_EXPORTED_TARGETS})
 add_dependencies(ratslam_mono ${PROJECT_NAME}_gencpp)
 
-install(TARGETS ratslam ratslam2 ratslam_lv ratslam_pc ratslam_em ratslam_vo
+
+install(TARGETS ratslam ratslam2 ratslam3 ratslam_fastslam ratslam_odo ratslam_lv ratslam_pc ratslam_em ratslam_vo
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 

@@ -135,7 +135,9 @@ int main(int argc, char * argv[])
   ros::Subscriber sub_template = node.subscribe<ratslam_ros::ViewTemplate>(topic_root + "/LocalView/Template", 0, boost::bind(template_callback, _1, pc, &pub_pc),
                                                                            ros::VoidConstPtr(), ros::TransportHints().tcpNoDelay());
 
-#ifdef HAVE_IRRLICHT
+
+
+  #ifdef HAVE_IRRLICHT
   boost::property_tree::ptree draw_settings;
   get_setting_child(draw_settings, settings, "draw", true);
   get_setting_from_ptree(use_graphics, draw_settings, "enable", true);

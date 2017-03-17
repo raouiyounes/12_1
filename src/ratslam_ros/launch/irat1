@@ -11,5 +11,7 @@
 
 <node pkg="image_view" type="image_view" name="overhead" args="image:=/overhead/camera/image _image_transport:=compressed" />
 <node name="test" pkg="ratslam_ros" type="ratslam_mono" args="$(find ratslam_ros)/config/config_irataus.txt  _image_transport:=compressed"  />
+<node name="odom_listener" pkg="ratslam_ros" type="ratslam_fastslam"  args="$(find ratslam_ros)/config/config_irataus.txt  _image_transport:=compressed" />
+  <node name="pcl_visualize" pkg="ratslam_ros" type="ratslam_pcl" />
 
 </launch>

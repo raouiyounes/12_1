@@ -538,11 +538,9 @@ bool PosecellNetwork::path_integration(double vtrans, double vrot)
           // assert(posecells[k][j][i] >= 0);
         }
       }
-
     }
     // end
   }
-
   return true;
 }
 
@@ -550,10 +548,8 @@ double PosecellNetwork::find_best()
 {
   int i, j, k;
   double x = -1, y = -1, th = -1;
-
   double * x_sums, *y_sums, *z_sums;
   double sum_x1, sum_x2, sum_y1, sum_y2;
-
   // % find the max activated cell
   double max = 0;
   for (k = 0; k < PC_DIM_TH; k++)
@@ -572,15 +568,12 @@ double PosecellNetwork::find_best()
       }
     }
   }
-
   //  % take the max activated cell +- AVG_CELL in 3d space
   //  % get the sums for each axis
   memset(pca_new_memory, 0, posecells_memory_size);
-
   x_sums = pca_new[0][0];
   y_sums = pca_new[1][0];
   z_sums = pca_new[2][0];
-
   for (k = (int)th; k < th + PC_CELLS_TO_AVG * 2 + 1; k++)
   {
     for (j = (int)y; j < y + PC_CELLS_TO_AVG * 2 + 1; j++)

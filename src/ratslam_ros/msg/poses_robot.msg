@@ -1,0 +1,3 @@
+float64 x_robot
+float64 y_robot
+float64 theta_robot
