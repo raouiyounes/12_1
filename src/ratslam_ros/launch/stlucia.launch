@@ -7,7 +7,6 @@
 	<node name="RatSLAMPoseCells" pkg="ratslam_ros" type="ratslam_pc" args="$(find ratslam_ros)/config/config_stlucia.txt _image_transport:=compressed" cwd="node" required="true" />
 
 <node name="test" pkg="ratslam_ros" type="ratslam_mono" args="$(find ratslam_ros)/config/config_stlucia.txt  _image_transport:=compressed"  />
-	<node pkg="rqt_plot" type="rqt_plot" name="plot_vt_em" args="/newcollege/LocalView/Template/current_id,/newcollege/PoseCell/TopologicalAction/dest_id" />
 	<node pkg="rosbag" type="record" name="record" args="/stlucia/ExperienceMap/Map /stlucia/ExperienceMap/RobotPose /stlucia/LocalView/Template /stlucia/PoseCell/TopologicalAction -O ratslam_out.bag" />
   <node name="pcl_visualize" pkg="ratslam_ros" type="ratslam_pcl" />
     <node name="odom_listener" pkg="ratslam_ros" type="ratslam_fastslam"  args="$(find ratslam_ros)/config/config_stlucia.txt  _image_transport:=compressed"  output="screen" />

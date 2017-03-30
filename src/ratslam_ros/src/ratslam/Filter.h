@@ -20,9 +20,15 @@ int numberOfPartic;
 MatrixXd robotPosePart;
 MatrixXd landmarks;
 public:
+
+void setNLand(int);
+void setNParti(int);
+void setPoseCloud(MatrixXd);
+void setLand(MatrixXd);
+
 std::map<int,vector<vector<float> >> observation();
-MatrixXd measure();
-vector<double> computeZObservation(vector<float> landmark,vector<float> posePartic);
+vector<vector<float> > measure(float x,float y,float theta);
+vector<float> computeZObservation(vector<float> landmark,vector<float> posePartic);
 std::map<int,float> dataAssociation();
 float poseEstimation();
 	Filter();

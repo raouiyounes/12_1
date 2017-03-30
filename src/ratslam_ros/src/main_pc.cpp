@@ -59,7 +59,6 @@ void odo_callback(nav_msgs::OdometryConstPtr odo, ratslam::PosecellNetwork *pc, 
   if (prev_time.toSec() > 0)
   {
     double time_diff = (odo->header.stamp - prev_time).toSec();
-
     pc_output.src_id = pc->get_current_exp_id();
     pc->on_odo(odo->twist.twist.linear.x, odo->twist.twist.angular.z, time_diff);
     pc_output.action = pc->get_action();
@@ -72,7 +71,6 @@ void odo_callback(nav_msgs::OdometryConstPtr odo, ratslam::PosecellNetwork *pc, 
       pub_pc->publish(pc_output);
       ROS_DEBUG_STREAM("PC:action_publish{odo}{" << ros::Time::now() << "} action{" << pc_output.header.seq << "}=" <<  pc_output.action << " src=" << pc_output.src_id << " dest=" << pc_output.dest_id);
     }
-
 #ifdef HAVE_IRRLICHT
 	if (use_graphics)
 	{

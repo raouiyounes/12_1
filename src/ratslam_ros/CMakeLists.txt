@@ -68,7 +68,7 @@ include_directories(
 #ratslam library 
 
 add_library(ratslam src/ratslam/experience_map.cpp src/ratslam/posecell_network.cpp  src/ratslam/local_view_match.cpp src/ratslam/visual_odometry.cpp)
-add_library(ratslam2  src/ratslam/FPVision.cpp src/ratslam/include_fs/measurement.h  src/ratslam/include_fs/movementModel.h  src/ratslam/include_fs/particle.h)
+add_library(ratslam2  src/ratslam/FPVision.cpp src/ratslam/Filter.h  src/ratslam/Filter.cpp)
 add_library(ratslam3  src/ratslam/include_fs/loMeasurement.h  src/ratslam/include_fs/loMeasurement.cpp src/ratslam/include_fs/particle.cpp src/ratslam/include_fs/particle.h  src/ratslam/include_fs/sitRobotMM.h src/ratslam/include_fs/sitRobotMM.cpp)
 
 # uncomment is you don't have irrlicht installed
@@ -108,8 +108,8 @@ ratslam2
   ${OPENGL_LIBRARIES}
   ${OpenCV_LIBRARIES})
 
-add_executable(ratslam_mono src/main_mono.cpp)
-target_link_libraries(ratslam_mono
+add_executable(ratslam_vland src/main_vland.cpp)
+target_link_libraries(ratslam_vland
   ${catkin_LIBRARIES}
  ratslam
 ratslam2
@@ -125,14 +125,16 @@ ratslam2
    ${PCL_LIBRARIES}
   )
 
-add_executable(ratslam_fastslam src/main_fastslam.cpp)
-target_link_libraries(ratslam_fastslam
+add_executable(ratslam_slam src/main_slam.cpp)
+target_link_libraries(ratslam_slam
   ${catkin_LIBRARIES}
  ratslam
 ratslam2
 ratslam3
   ${OpenCV_LIBRARIES}
    ${PCL_LIBRARIES}
+   ${IRRLICHT_LIBRARIES}
+  ${OPENGL_LIBRARIES}
   )
   
   
@@ -181,14 +183,14 @@ add_dependencies(ratslam_lv ratslam_ros_generate_messages_cpp)
 add_dependencies(ratslam_pc ratslam_ros_generate_messages_cpp)
 add_dependencies(ratslam_em ratslam_ros_generate_messages_cpp)
 add_dependencies(ratslam_vo ratslam_ros_generate_messages_cpp)
-add_dependencies(ratslam_fastslam ratslam_ros_generate_messages_cpp)
+add_dependencies(ratslam_slam ratslam_ros_generate_messages_cpp)
 add_dependencies(ratslam_odo ratslam_ros_generate_messages_cpp)
 
-add_dependencies(ratslam_mono ${catkin_EXPORTED_TARGETS})
-add_dependencies(ratslam_mono ${PROJECT_NAME}_gencpp)
+add_dependencies(ratslam_vland ${catkin_EXPORTED_TARGETS})
+add_dependencies(ratslam_vland ${PROJECT_NAME}_gencpp)
 
 
-install(TARGETS ratslam ratslam2 ratslam3 ratslam_fastslam ratslam_odo ratslam_lv ratslam_pc ratslam_em ratslam_vo
+install(TARGETS ratslam ratslam2 ratslam3 ratslam_slam ratslam_odo ratslam_lv ratslam_pc ratslam_em ratslam_vo
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 

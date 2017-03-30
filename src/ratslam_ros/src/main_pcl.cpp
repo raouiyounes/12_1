@@ -63,7 +63,7 @@ protected:
 void chatterCallback(ratslam_ros::toute::ConstPtr  msg)
 {
 
-	  ROS_INFO("Idddd heard: [%f]", msg->landX[0]);
+	  ROS_INFO("Idddd heard: [%f]", msg->land[0].valueX);
 
 	/*
 int ttt;
